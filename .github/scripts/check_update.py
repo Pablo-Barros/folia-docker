@@ -1,0 +1,34 @@
+from enums import PaperMCAPIProject
+
+from utils import GitHubAPIUtils, PaperMCAPIUtils, VersionUtils
+
+
+def main():
+    all_papermc_api_folia_versions = PaperMCAPIUtils.get_all_versions(
+        PaperMCAPIProject.PAPER
+    )
+    all_local_versions = VersionUtils.get_all_local_versions()
+    open_gh_issues = GitHubAPIUtils.get_open_issues().unwrap_or([])
+    open_gh_issue_titles = [issue["title"] for issue in open_gh_issues]
+
+    for papermc_api_folia_version in all_papermc_api_folia_versions:
+        if papermc_api_folia_version not in all_local_versions:
+            issue_title = f"New Folia version `{papermc_api_folia_version}`"
+            if issue_title not in open_gh_issue_titles:
+                result = GitHubAPIUtils.create_issue(
+                    title=issue_title,
+                    body=f"Version `{papermc_api_folia_version}` is not supported by this repository yet. Please add support for this version.",
+                    assignees=["Endkind"],
+                    labels=["update"],
+                )
+
+                if result.is_ok():
+                    print(f"Issue created for version {papermc_api_folia_version}")
+                else:
+                    print(
+                        f"Failed to create issue for version {papermc_api_folia_version}: {result.unwrap_err()}"
+                    )
+
+
+if __name__ == "__main__":
+    main()
