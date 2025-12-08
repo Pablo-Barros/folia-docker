@@ -5,7 +5,7 @@ from utils import GitHubAPIUtils, PaperMCAPIUtils, VersionUtils
 
 def main():
     all_papermc_api_folia_versions = PaperMCAPIUtils.get_all_versions(
-        PaperMCAPIProject.PAPER
+        PaperMCAPIProject.FOLIA
     )
     all_local_versions = VersionUtils.get_all_local_versions()
     open_gh_issues = GitHubAPIUtils.get_open_issues().unwrap_or([])
