@@ -10,7 +10,7 @@ RUN pip install -r requirements.txt
 
 RUN python get-folia.py --version $VERSION --build $BUILD --output /endkind/server.jar
 
-FROM eclipse-temurin:21 AS runtime
+FROM eclipse-temurin:latest AS runtime
 
 LABEL Author="Endkind Ender <endkind.ender@endkind.net>"
 
