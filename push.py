@@ -28,7 +28,13 @@ def push(tag: str) -> Result[str, str]:
         Result[str, str]: Ok with success message or Err with error message
     """
     try:
-        image_name = DockerConfig.get_image_name(tag)
+        # Handle experimental tagging
+        if tag == "1.21.11":
+            image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp2"
+        elif tag == "latest-experimental":
+            image_name = f"{DockerConfig.get_namespace()}/folia:latest-experimental"
+        else:
+            image_name = DockerConfig.get_image_name(tag)
 
         cmd = ["docker", "push", image_name]
 

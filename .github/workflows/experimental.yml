@@ -99,7 +99,7 @@ jobs:
         run: |
           source .venv/bin/activate
 
-          # Build known experimental versions
+          # Build experimental versions with proper tagging
           for version in "1.21.11" "latest-experimental"; do
             if [ -d "versions/$version" ]; then
               echo "Building experimental version: $version"
@@ -114,7 +114,7 @@ jobs:
         run: |
           source .venv/bin/activate
 
-          # Push known experimental versions
+          # Push experimental versions with proper tagging
           for version in "1.21.11" "latest-experimental"; do
             if [ -d "versions/$version" ]; then
               echo "Pushing experimental version: $version"

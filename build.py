@@ -34,17 +34,27 @@ def build(tag: str) -> Result[str, str]:
         Result[str, str]: Ok with success message or Err with error message
     """
     try:
-        image_name = DockerConfig.get_image_name(tag)
+        # Handle experimental tagging
+        if tag == "1.21.11":
+            image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp2"
+            build_args = ["--build-arg", "VERSION=1.21.11", "--build-arg", "BUILD=2"]
+        elif tag == "latest-experimental":
+            image_name = f"{DockerConfig.get_namespace()}/folia:latest-experimental"
+            build_args = []
+        else:
+            image_name = DockerConfig.get_image_name(tag)
+            build_args = []
 
         context_path = f"./versions/{tag}"
 
         if not os.path.exists(context_path):
             return Err(f"Build context path '{context_path}' does not exist")
 
-        cmd = ["docker", "build", "-t", image_name, context_path]
+        cmd = ["docker", "build"] + build_args + ["-t", image_name, context_path]
 
         print(f"Building Docker image: {image_name}")
         print(f"Build context: {context_path}")
+        print(f"Build args: {build_args if build_args else 'None'}")
         print(f"Command: {' '.join(cmd)}")
 
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
