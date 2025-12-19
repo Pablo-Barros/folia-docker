@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from typing import List
 
 from result import Err, Ok, Result, is_err, is_ok
@@ -8,7 +9,11 @@ from utils import discover_versions
 
 
 def main():
-    result = push_all()
+    if len(sys.argv) > 1:
+        versions = sys.argv[1:]
+        result = push_all(versions)
+    else:
+        result = push_all()
 
     if is_ok(result):
         print(f"Push process succeeded: {result.unwrap()}")
