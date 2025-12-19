@@ -130,26 +130,49 @@ jobs:
         run: |
           source .venv/bin/activate
 
-          # Build experimental versions with proper tagging
-          for version in "1.21.11" "latest-experimental"; do
+          # Build ONLY experimental versions with proper tagging
+          echo "Building experimental images..."
+          for version in "1.21.11"; do
             if [ -d "versions/$version" ]; then
               echo "Building experimental version: $version"
               python build.py "$version"
+              if [ $? -eq 0 ]; then
+                echo "✅ Successfully built: $version"
+              else
+                echo "❌ Failed to build: $version"
+                exit 1
+              fi
+            else
+              echo "Directory not found: versions/$version"
             fi
           done
         env:
           DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+
+      - name: List built images
+        run: |
+          echo "Built Docker images:"
+          docker images | grep folia
 
       - name: Push experimental images
         if: ${{ vars.DOCKER_USERNAME }}
         run: |
           source .venv/bin/activate
 
-          # Push experimental versions with proper tagging
-          for version in "1.21.11" "latest-experimental"; do
+          # Push ONLY experimental versions with proper tagging
+          echo "Pushing experimental images..."
+          for version in "1.21.11"; do
             if [ -d "versions/$version" ]; then
               echo "Pushing experimental version: $version"
               python push.py "$version"
+              if [ $? -eq 0 ]; then
+                echo "✅ Successfully pushed: $version"
+              else
+                echo "❌ Failed to push: $version"
+                # Continue with other pushes even if one fails
+              fi
+            else
+              echo "Directory not found: versions/$version"
             fi
           done
         env:
