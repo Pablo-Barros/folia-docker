@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  folia-experimental:
+    stdin_open: true
+    tty: true
+    ports:
+      - "25565:25565"
+    container_name: folia-1.21.11-experimental
+    volumes:
+      # Host directory mounting for easy access to server files
+      - ./server-data:/data
+      # Optional: Mount specific config files for easy editing
+      # - ./server.properties:/data/server.properties:ro
+      # - ./whitelist.json:/data/whitelist.json:ro
+      # - ./ops.json:/data/ops.json:ro
+    environment:
+      # Memory configuration optimized for 16GB RAM
+      - MIN_RAM=8G
+      - MAX_RAM=16G
+
+      # Server configuration
+      - MINECRAFT_EULA=true
+      - FOLIA_FLAGS=--nojline
+
+      # Java optimization with G1GC tuned for 16GB RAM
+      # Based on Aikar's flags adapted for Folia's multi-threading
+      - JAVA_FLAGS=-XX:+UseG1GC
+        -XX:+ParallelRefProcEnabled
+        -XX:MaxGCPauseMillis=200
+        -XX:+UnlockExperimentalVMOptions
+        -XX:+DisableExplicitGC
+        -XX:+AlwaysPreTouch
+        -XX:G1NewSizePercent=30
+        -XX:G1MaxNewSizePercent=40
+        -XX:G1HeapRegionSize=8M
+        -XX:G1ReservePercent=20
+        -XX:G1HeapWastePercent=5
+        -XX:G1MixedGCCountTarget=4
+        -XX:InitiatingHeapOccupancyPercent=15
+        -XX:G1MixedGCLiveThresholdPercent=90
+        -XX:G1RSetUpdatingPauseTimePercent=5
+        -XX:SurvivorRatio=32
+        -XX:+PerfDisableSharedMem
+        -XX:MaxTenuringThreshold=1
+
+      # Timezone and debug settings
+      - TZ=America/Mexico_City
+      - DEBUG=false
+
+      # Optional: Additional server properties
+      - ONLINE_MODE=true
+    restart: unless-stopped
+
+    # Resource limits for production stability
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 18G  # Slightly higher than MAX_RAM for overhead
+        reservations:
+          cpus: '2.0'
+          memory: 10G
+
+    # Health check for monitoring
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "25565"] || ["CMD", "echo", "Server not ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network configuration
+    networks:
+      - folia-network
+
+    # User and security settings
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+
+    image: blackao/folia:1.21.11-exp2
+
+networks:
+  folia-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
