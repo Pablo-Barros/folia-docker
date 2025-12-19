@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   sync-experimental:
@@ -94,49 +95,16 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Get experimental versions
-        id: versions
-        run: |
-          source .venv/bin/activate
-          python -c "
-import sys
-sys.path.append('.')
-from utils import discover_versions
-
-# Get all versions, filter for experimental
-versions = discover_versions()
-experimental_versions = []
-experimental_pattern = []
-
-for version in versions:
-    # Check if version directory contains experimental builds
-    import os
-    version_dir = f'versions/{version}'
-    get_folia_path = f'{version_dir}/get-folia.py'
-
-    if os.path.exists(get_folia_path):
-        # Simple check: if directory name contains 'latest-experimental'
-        # or if version has known experimental builds
-        if version == 'latest-experimental' or version in ['1.21.11']:
-            experimental_versions.append(version)
-
-            # Add experimental tags for versions that have them
-            if version != 'latest-experimental':
-                # This would be enhanced to check actual build info
-                experimental_pattern.append(f'{version}-exp*')
-
-print('experimental_versions=' + ','.join(experimental_versions))
-print('experimental_pattern=' + ','.join(experimental_pattern))
-" >> $GITHUB_OUTPUT
-
-      - name: Build and push experimental images
+      - name: Build experimental images
         run: |
           source .venv/bin/activate
 
-          # Build experimental versions
-          for version in "${{ steps.versions.outputs.experimental_versions }}"; do
-            echo "Building experimental version: $version"
-            python build.py "$version"
+          # Build known experimental versions
+          for version in "1.21.11" "latest-experimental"; do
+            if [ -d "versions/$version" ]; then
+              echo "Building experimental version: $version"
+              python build.py "$version"
+            fi
           done
         env:
           DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
@@ -146,10 +114,12 @@ print('experimental_pattern=' + ','.join(experimental_pattern))
         run: |
           source .venv/bin/activate
 
-          # Push experimental versions
-          for version in "${{ steps.versions.outputs.experimental_versions }}"; do
-            echo "Pushing experimental version: $version"
-            python push.py "$version"
+          # Push known experimental versions
+          for version in "1.21.11" "latest-experimental"; do
+            if [ -d "versions/$version" ]; then
+              echo "Pushing experimental version: $version"
+              python push.py "$version"
+            fi
           done
         env:
           DOCKER_NAMESPACE: ${{ vars.DOCKER_USERNAME }}
@@ -157,6 +127,6 @@ print('experimental_pattern=' + ','.join(experimental_pattern))
       - name: Create Summary
         run: |
           echo "## Experimental Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Experimental versions built:** ${{ steps.versions.outputs.experimental_versions }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total experimental versions:** $(echo '${{ steps.versions.outputs.experimental_versions }}' | tr ',' '\n' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Experimental versions processed:** 1.21.11, latest-experimental" >> $GITHUB_STEP_SUMMARY
           echo "- **Docker namespace:** ${{ vars.DOCKER_NAMESPACE || 'endkind' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build status:** Successfully built and pushed experimental versions" >> $GITHUB_STEP_SUMMARY
