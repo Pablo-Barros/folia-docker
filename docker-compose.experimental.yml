@@ -52,14 +52,14 @@ services:
       - ONLINE_MODE=true
     restart: unless-stopped
 
-    # Resource limits for production stability
+    # Resource limits for production stability (Optimized for Intel i5-10505)
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 18G  # Slightly higher than MAX_RAM for overhead
+          cpus: '8.0'     # Aprovechar todos los 12 hilos del procesador
+          memory: 18G   # Mantener 18G para overhead
         reservations:
-          cpus: '2.0'
+          cpus: '4.0'     # Reservar todos los núcleos físicos para estabilidad
           memory: 10G
 
     # Health check for monitoring
