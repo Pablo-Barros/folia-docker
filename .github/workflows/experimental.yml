@@ -61,21 +61,33 @@ jobs:
           EXPERIMENTAL_CHANNEL: experimental
           AUTO_SYNC_EXPERIMENTAL: true
 
-      - name: Check for changes
+      - name: Check for changes and experimental versions
         id: changes
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
+          git_changes=$(git status --porcelain)
+
+          # Check for git changes
+          if [ -n "$git_changes" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "changed_files=$(git diff --name-only | wc -l)" >> $GITHUB_OUTPUT
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "changed_files=0" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if experimental versions exist (always build them)
+          if [ -d "versions/1.21.11" ] || [ -d "versions/latest-experimental" ]; then
+            echo "has_experimental_versions=true" >> $GITHUB_OUTPUT
+            echo "Experimental versions found, will build regardless of sync changes"
+          else
+            echo "has_experimental_versions=false" >> $GITHUB_OUTPUT
           fi
 
   build-experimental:
     name: Build Experimental Images
     runs-on: ubuntu-latest
     needs: sync-experimental
-    if: needs.sync-experimental.outputs.has_changes == 'true'
+    if: needs.sync-experimental.outputs.has_changes == 'true' || needs.sync-experimental.outputs.has_experimental_versions == 'true'
     permissions:
       contents: write
       packages: write
