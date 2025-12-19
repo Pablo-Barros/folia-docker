@@ -10,6 +10,22 @@ on:
       - 'scripts/**'
       - 'config.py'
       - 'get-folia-enhanced.py'
+      - 'build.py'
+      - 'push.py'
+      - 'utils.py'
+      - 'requirements.txt'
+      - 'versions/**'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'scripts/**'
+      - 'config.py'
+      - 'get-folia-enhanced.py'
+      - 'build.py'
+      - 'push.py'
+      - 'utils.py'
+      - 'requirements.txt'
+      - 'versions/**'
 
 permissions:
   contents: read
