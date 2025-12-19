@@ -135,11 +135,21 @@ jobs:
           for version in "1.21.11"; do
             if [ -d "versions/$version" ]; then
               echo "Building experimental version: $version"
+              echo "Current working directory: $(pwd)"
+              echo "Docker namespace: $DOCKER_NAMESPACE"
+              echo "Contents of versions/$version:"
+              ls -la "versions/$version/"
+
               python build.py "$version"
-              if [ $? -eq 0 ]; then
+              BUILD_RESULT=$?
+
+              if [ $BUILD_RESULT -eq 0 ]; then
                 echo "✅ Successfully built: $version"
               else
-                echo "❌ Failed to build: $version"
+                echo "❌ Failed to build: $version (exit code: $BUILD_RESULT)"
+                # Show Docker images for debugging
+                echo "Current Docker images:"
+                docker images | grep folia || echo "No folia images found"
                 exit 1
               fi
             else
@@ -149,10 +159,22 @@ jobs:
         env:
           DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
 
-      - name: List built images
+      - name: List built images and verify
         run: |
-          echo "Built Docker images:"
+          echo "=== Docker Images Check ==="
           docker images | grep folia
+
+          echo "=== Verifying Experimental Image ==="
+          EXPERIMENTAL_IMAGE="${{ vars.DOCKER_USERNAME || 'endkind' }}/folia:1.21.11-exp2"
+          if docker images | grep -q "1.21.11-exp2"; then
+            echo "✅ Experimental image found: $EXPERIMENTAL_IMAGE"
+            docker inspect "$EXPERIMENTAL_IMAGE" > /dev/null && echo "✅ Image is valid" || echo "❌ Image is corrupted"
+          else
+            echo "❌ Experimental image NOT found: $EXPERIMENTAL_IMAGE"
+            echo "All available images:"
+            docker images
+            exit 1
+          fi
 
       - name: Push experimental images
         if: ${{ vars.DOCKER_USERNAME }}
