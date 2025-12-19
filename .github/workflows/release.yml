@@ -50,10 +50,22 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements.txt
 
+      - name: Sync experimental versions
+        run: |
+          source .venv/bin/activate
+          python scripts/sync_experimental.py
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || secrets.DOCKER_USERNAME || 'endkind' }}
+          ENABLE_EXPERIMENTAL: true
+          EXPERIMENTAL_CHANNEL: experimental
+          AUTO_SYNC_EXPERIMENTAL: true
+
       - name: Run build script
         run: |
           source .venv/bin/activate
           python build.py
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || secrets.DOCKER_USERNAME || 'endkind' }}
 
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -62,3 +74,5 @@ jobs:
         run: |
           source .venv/bin/activate
           python push.py
+        env:
+          DOCKER_NAMESPACE: ${{ secrets.DOCKER_USERNAME }}

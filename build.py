@@ -5,6 +5,7 @@ from typing import List
 
 from result import Err, Ok, Result, is_err, is_ok
 
+from config import DockerConfig
 from utils import discover_versions
 
 
@@ -33,7 +34,7 @@ def build(tag: str) -> Result[str, str]:
         Result[str, str]: Ok with success message or Err with error message
     """
     try:
-        image_name = f"endkind/folia:{tag}"
+        image_name = DockerConfig.get_image_name(tag)
 
         context_path = f"./versions/{tag}"
 

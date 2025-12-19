@@ -1,0 +1,162 @@
+name: Experimental Builds
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'scripts/**'
+      - 'config.py'
+      - 'get-folia-enhanced.py'
+
+permissions:
+  contents: read
+
+jobs:
+  sync-experimental:
+    name: Sync Experimental Versions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          python3 -m venv .venv
+
+      - name: Activate virtual environment and install dependencies
+        run: |
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Sync experimental versions
+        run: |
+          source .venv/bin/activate
+          python scripts/sync_experimental.py
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+          ENABLE_EXPERIMENTAL: true
+          EXPERIMENTAL_CHANNEL: experimental
+          AUTO_SYNC_EXPERIMENTAL: true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "changed_files=$(git diff --name-only | wc -l)" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-experimental:
+    name: Build Experimental Images
+    runs-on: ubuntu-latest
+    needs: sync-experimental
+    if: needs.sync-experimental.outputs.has_changes == 'true'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          python3 -m venv .venv
+
+      - name: Activate virtual environment and install dependencies
+        run: |
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Sync experimental versions
+        run: |
+          source .venv/bin/activate
+          python scripts/sync_experimental.py
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+          ENABLE_EXPERIMENTAL: true
+          EXPERIMENTAL_CHANNEL: experimental
+          AUTO_SYNC_EXPERIMENTAL: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: ${{ vars.DOCKER_USERNAME && secrets.DOCKER_PASSWORD }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Get experimental versions
+        id: versions
+        run: |
+          source .venv/bin/activate
+          python -c "
+import sys
+sys.path.append('.')
+from utils import discover_versions
+
+# Get all versions, filter for experimental
+versions = discover_versions()
+experimental_versions = []
+experimental_pattern = []
+
+for version in versions:
+    # Check if version directory contains experimental builds
+    import os
+    version_dir = f'versions/{version}'
+    get_folia_path = f'{version_dir}/get-folia.py'
+
+    if os.path.exists(get_folia_path):
+        # Simple check: if directory name contains 'latest-experimental'
+        # or if version has known experimental builds
+        if version == 'latest-experimental' or version in ['1.21.11']:
+            experimental_versions.append(version)
+
+            # Add experimental tags for versions that have them
+            if version != 'latest-experimental':
+                # This would be enhanced to check actual build info
+                experimental_pattern.append(f'{version}-exp*')
+
+print('experimental_versions=' + ','.join(experimental_versions))
+print('experimental_pattern=' + ','.join(experimental_pattern))
+" >> $GITHUB_OUTPUT
+
+      - name: Build and push experimental images
+        run: |
+          source .venv/bin/activate
+
+          # Build experimental versions
+          for version in "${{ steps.versions.outputs.experimental_versions }}"; do
+            echo "Building experimental version: $version"
+            python build.py "$version"
+          done
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+
+      - name: Push experimental images
+        if: ${{ vars.DOCKER_USERNAME && secrets.DOCKER_PASSWORD }}
+        run: |
+          source .venv/bin/activate
+
+          # Push experimental versions
+          for version in "${{ steps.versions.outputs.experimental_versions }}"; do
+            echo "Pushing experimental version: $version"
+            python push.py "$version"
+          done
+        env:
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_USERNAME }}
+
+      - name: Create Summary
+        run: |
+          echo "## Experimental Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Experimental versions built:** ${{ steps.versions.outputs.experimental_versions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total experimental versions:** $(echo '${{ steps.versions.outputs.experimental_versions }}' | tr ',' '\n' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker namespace:** ${{ vars.DOCKER_NAMESPACE || 'endkind' }}" >> $GITHUB_STEP_SUMMARY

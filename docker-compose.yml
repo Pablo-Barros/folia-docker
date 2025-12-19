@@ -11,7 +11,7 @@ services:
             - MAX_RAM=3G
             - MINECRAFT_EULA=true
         restart: always
-        image: endkind/folia:latest
+        image: ${DOCKER_NAMESPACE:-endkind}/folia:latest
 
 volumes:
     endkind-folia:
