@@ -32,6 +32,8 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install -r requirements.txt
+          # Ensure requests is installed for sync_experimental.py
+          pip install requests
 
       - name: Sync experimental versions
         run: |
@@ -74,6 +76,8 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install -r requirements.txt
+          # Ensure requests is installed for sync_experimental.py
+          pip install requests
 
       - name: Sync experimental versions
         run: |

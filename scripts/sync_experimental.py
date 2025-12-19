@@ -6,12 +6,12 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import requests
-from result import Err, Ok, Result, is_err
-
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
+# Import from parent directory
+import requests
+from result import Err, Ok, Result, is_err
 from config import BuildConfig, VersionConfig
 
 
