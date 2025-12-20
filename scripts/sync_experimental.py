@@ -59,7 +59,7 @@ def sync_all_experimental_versions() -> Result[str, str]:
                 synced_count += 1
                 created_versions.append(f"{version}-exp{exp_build}")
 
-        # Create/update latest-experimental directory
+        # Create/update experimental directory
         if created_versions:
             update_latest_experimental_directory()
 
@@ -181,7 +181,7 @@ This Docker image provides Folia Minecraft server version {version} {'build ' + 
 ## Quick start
 
 ```bash
-docker run -it -d -p 25565:25565 --name folia-{version} -e MINECRAFT_EULA=true ${{DOCKER_NAMESPACE:-endkind}}/folia:{version}{f'-exp{build}' if is_experimental else ''}
+docker run -it -d -p 25565:25565 --name folia-{version} -e MINECRAFT_EULA=true ${DOCKER_NAMESPACE:-blackao}/folia:{version}{f'-exp{build}' if is_experimental else ''}
 ```
 
 ## Environment variables
@@ -196,7 +196,7 @@ docker run -it -d -p 25565:25565 --name folia-{version} -e MINECRAFT_EULA=true $
 ## Build from source
 
 ```bash
-docker build --build-arg VERSION={version} --build-arg BUILD={build} -t ${{DOCKER_NAMESPACE:-endkind}}/folia:{version}{f'-exp{build}' if is_experimental else ''} .
+docker build --build-arg VERSION={version} --build-arg BUILD={build} -t ${DOCKER_NAMESPACE:-blackao}/folia:{version}{f'-exp{build}' if is_experimental else ''} .
 ```
 
 ## Experimental Build Information
@@ -225,29 +225,29 @@ def update_experimental_directory(version_dir: Path, version: str, build: int):
 
 
 def update_latest_experimental_directory():
-    """Create or update the latest-experimental directory."""
+    """Create or update the experimental directory."""
     try:
         versions_dir = Path(__file__).parent.parent / "versions"
-        latest_exp_dir = versions_dir / "latest-experimental"
+        latest_exp_dir = versions_dir / "experimental"
 
         # Find the most recent experimental version
         latest_version, latest_build = find_latest_experimental_version()
 
         if not latest_version:
-            print("No experimental versions found to update latest-experimental")
+            print("No experimental versions found to update experimental")
             return
 
-        print(f"Updating latest-experimental to point to {latest_version} build {latest_build}")
+        print(f"Updating experimental to point to {latest_version} build {latest_build}")
 
         # Remove existing directory if it exists
         if latest_exp_dir.exists():
             shutil.rmtree(latest_exp_dir)
 
-        # Create new latest-experimental directory
+        # Create new experimental directory
         latest_exp_dir.mkdir(exist_ok=True)
         copy_template_files(latest_exp_dir, latest_version, latest_build, is_experimental=True)
 
-        # Create special README for latest-experimental
+        # Create special README for experimental
         latest_readme = f"""# Latest Experimental Folia
 
 This Docker image provides the latest experimental build of Folia Minecraft server.
@@ -257,7 +257,7 @@ This Docker image provides the latest experimental build of Folia Minecraft serv
 ## Quick start
 
 ```bash
-docker run -it -d -p 25565:25565 --name folia-latest-exp -e MINECRAFT_EULA=true ${{DOCKER_NAMESPACE:-endkind}}/folia:latest-experimental
+docker run -it -d -p 25565:25565 --name folia-latest-exp -e MINECRAFT_EULA=true ${DOCKER_NAMESPACE:-blackao}/folia:experimental
 ```
 
 ## Experimental Build Warning
@@ -280,7 +280,7 @@ This project is licensed under the terms of the GNU General Public License v3.0 
             f.write(latest_readme)
 
     except Exception as e:
-        print(f"Error updating latest-experimental directory: {e}")
+        print(f"Error updating experimental directory: {e}")
 
 
 def find_latest_experimental_version() -> tuple[Optional[str], Optional[int]]:

@@ -7,7 +7,7 @@ class DockerConfig:
     @staticmethod
     def get_namespace() -> str:
         """Get the Docker namespace from environment variable or default."""
-        return os.environ.get('DOCKER_NAMESPACE', 'endkind')
+        return os.environ.get('DOCKER_NAMESPACE', 'blackao')
 
     @staticmethod
     def get_image_name(tag: str) -> str:
@@ -63,4 +63,4 @@ class VersionConfig:
     @staticmethod
     def get_latest_experimental_tag() -> str:
         """Get the tag name for latest experimental build."""
-        return "latest-experimental"
+        return "experimental"

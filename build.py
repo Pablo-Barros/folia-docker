@@ -35,17 +35,23 @@ def build(tag: str) -> Result[str, str]:
     """
     try:
         # Handle experimental tagging
-        if tag == "1.21.11":
+        if tag == "experimental":
+            image_name = DockerConfig.get_image_name("experimental")
+            build_args = ["--build-arg", "VERSION=1.21.11", "--build-arg", "BUILD=2"]
+            context_path = "./versions/1.21.11"
+        elif tag == "1.21.11":
             image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp2"
             build_args = ["--build-arg", "VERSION=1.21.11", "--build-arg", "BUILD=2"]
-        elif tag == "latest-experimental":
-            image_name = f"{DockerConfig.get_namespace()}/folia:latest-experimental"
+            context_path = "./versions/1.21.11"
+        elif tag == "latest":
+            # Build newest stable version as latest (1.21.8)
+            image_name = DockerConfig.get_image_name("latest")
             build_args = []
+            context_path = "./versions/1.21.8"
         else:
             image_name = DockerConfig.get_image_name(tag)
             build_args = []
-
-        context_path = f"./versions/{tag}"
+            context_path = f"./versions/{tag}"
 
         if not os.path.exists(context_path):
             return Err(f"Build context path '{context_path}' does not exist")

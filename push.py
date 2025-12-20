@@ -34,10 +34,12 @@ def push(tag: str) -> Result[str, str]:
     """
     try:
         # Handle experimental tagging
-        if tag == "1.21.11":
+        if tag == "experimental":
+            image_name = DockerConfig.get_image_name("experimental")
+        elif tag == "1.21.11":
             image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp2"
-        elif tag == "latest-experimental":
-            image_name = f"{DockerConfig.get_namespace()}/folia:latest-experimental"
+        elif tag == "latest":
+            image_name = DockerConfig.get_image_name("latest")
         else:
             image_name = DockerConfig.get_image_name(tag)
 

@@ -56,7 +56,7 @@ jobs:
           source .venv/bin/activate
           python scripts/sync_experimental.py
         env:
-          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'blackao' }}
           ENABLE_EXPERIMENTAL: true
           EXPERIMENTAL_CHANNEL: experimental
           AUTO_SYNC_EXPERIMENTAL: true
@@ -111,7 +111,7 @@ jobs:
           source .venv/bin/activate
           python scripts/sync_experimental.py
         env:
-          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'blackao' }}
           ENABLE_EXPERIMENTAL: true
           EXPERIMENTAL_CHANNEL: experimental
           AUTO_SYNC_EXPERIMENTAL: true
@@ -157,7 +157,7 @@ jobs:
             fi
           done
         env:
-          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'endkind' }}
+          DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || 'blackao' }}
 
       - name: List built images and verify
         run: |
@@ -165,7 +165,7 @@ jobs:
           docker images | grep folia
 
           echo "=== Verifying Experimental Image ==="
-          EXPERIMENTAL_IMAGE="${{ vars.DOCKER_USERNAME || 'endkind' }}/folia:1.21.11-exp2"
+          EXPERIMENTAL_IMAGE="${{ vars.DOCKER_USERNAME || 'blackao' }}/folia:1.21.11-exp2"
           if docker images | grep -q "1.21.11-exp2"; then
             echo "✅ Experimental image found: $EXPERIMENTAL_IMAGE"
             docker inspect "$EXPERIMENTAL_IMAGE" > /dev/null && echo "✅ Image is valid" || echo "❌ Image is corrupted"
@@ -233,6 +233,6 @@ jobs:
       - name: Create Summary
         run: |
           echo "## Experimental Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Experimental versions processed:** 1.21.11, latest-experimental" >> $GITHUB_STEP_SUMMARY
-          echo "- **Docker namespace:** ${{ vars.DOCKER_NAMESPACE || 'endkind' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Experimental versions processed:** 1.21.11, experimental" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker namespace:** ${{ vars.DOCKER_NAMESPACE || 'blackao' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build status:** Successfully built and pushed experimental versions" >> $GITHUB_STEP_SUMMARY

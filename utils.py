@@ -92,7 +92,7 @@ def discover_experimental_versions() -> List[str]:
 def _is_experimental_version(version: str) -> bool:
     """Check if a version is experimental."""
     # Check for explicit experimental directories
-    if version == "latest-experimental":
+    if version == "experimental":
         return True
 
     # Check version directory for experimental build markers
@@ -143,8 +143,8 @@ def get_experimental_tags(version: str) -> List[str]:
                     content = f.read()
                     # Look for build number patterns or channel configuration
                     # This is a simple heuristic - could be enhanced with API calls
-                    if version == "latest-experimental":
-                        experimental_tags.append("latest-experimental")
+                    if version == "experimental":
+                        experimental_tags.append("experimental")
                     elif "experimental" in content:
                         # Add experimental tag format
                         experimental_tags.append(f"{version}-exp*")
