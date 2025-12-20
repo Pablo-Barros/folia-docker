@@ -1,6 +1,6 @@
 FROM python:3.13-slim AS build
 
-ARG VERSION=1.19.4
+ARG VERSION=latest
 ARG BUILD=latest
 
 COPY get-folia.py get-folia.py
@@ -10,7 +10,7 @@ RUN pip install -r requirements.txt
 
 RUN python get-folia.py --version $VERSION --build $BUILD --output /endkind/server.jar
 
-FROM eclipse-temurin:17 AS runtime
+FROM eclipse-temurin:latest AS runtime
 
 LABEL Author="Endkind Ender <endkind.ender@endkind.net>"
 

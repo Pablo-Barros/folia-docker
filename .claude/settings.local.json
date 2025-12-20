@@ -17,7 +17,13 @@
       "Bash(python3:*)",
       "Bash(where:*)",
       "Bash(C:\\Users\\pablo\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe:*)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(docker:*)",
+      "WebSearch",
+      "WebFetch(domain:fill-ui.papermc.io)",
+      "WebFetch(domain:api.papermc.io)",
+      "Bash(./create-all-directories.sh:*)"
     ]
   }
 }

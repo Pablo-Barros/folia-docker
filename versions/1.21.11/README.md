@@ -1,11 +1,14 @@
 # Folia 1.21.11 (Experimental)
 
-This Docker image provides Folia Minecraft server version 1.21.11 build 2 (experimental channel).
+This Docker image provides Folia Minecraft server version 1.21.11 (experimental build).
+
+**Build:** 2
+**Channel:** experimental
 
 ## Quick start
 
 ```bash
-docker run -it -d -p 25565:25565 --name folia-1.21.11 -e MINECRAFT_EULA=true ${DOCKER_NAMESPACE:-endkind}/folia:1.21.11-exp2
+docker run -it -d -p 25565:25565 --name folia-1.21.11 -e MINECRAFT_EULA=true blackao/folia:1.21.11
 ```
 
 ## Environment variables
@@ -20,18 +23,12 @@ docker run -it -d -p 25565:25565 --name folia-1.21.11 -e MINECRAFT_EULA=true ${D
 ## Build from source
 
 ```bash
-docker build --build-arg VERSION=1.21.11 --build-arg BUILD=2 -t ${DOCKER_NAMESPACE:-endkind}/folia:1.21.11-exp2 .
+docker build --build-arg VERSION=1.21.11 --build-arg BUILD=2 -t blackao/folia:1.21.11 versions/1.21.11/
 ```
 
-## Experimental Build Information
+## Experimental Build Warning
 
 This is an experimental build of Folia. Experimental builds may contain new features but can also have bugs. Use with caution in production environments.
-
-**Build Details:**
-- Version: 1.21.11
-- Build: 2
-- Channel: experimental
-- Downloaded from: PaperMC API
 
 ## License
 
