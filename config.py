@@ -64,3 +64,23 @@ class VersionConfig:
     def get_latest_experimental_tag() -> str:
         """Get the tag name for latest experimental build."""
         return "experimental"
+
+    @staticmethod
+    def prefer_stable_builds() -> bool:
+        """Check if stable builds should be preferred over experimental builds."""
+        return os.environ.get('PREFER_STABLE_BUILDS', 'true').lower() == 'true'
+
+    @staticmethod
+    def get_default_build_channel() -> str:
+        """Get default build channel preference."""
+        return os.environ.get('DEFAULT_BUILD_CHANNEL', 'default')
+
+    @staticmethod
+    def get_stable_channel_name() -> str:
+        """Get the stable channel name."""
+        return "default"
+
+    @staticmethod
+    def get_experimental_channel_name() -> str:
+        """Get the experimental channel name."""
+        return "experimental"

@@ -1,5 +1,6 @@
 import os
 import re
+import requests
 from typing import List, Tuple, Optional
 
 from config import BuildConfig
@@ -152,3 +153,154 @@ def get_experimental_tags(version: str) -> List[str]:
                 pass
 
     return experimental_tags
+
+
+# =============================================================================
+# Build Detection Functions for Stable-First Tagging Strategy
+# =============================================================================
+
+def get_build_info(version: str, build: str) -> dict:
+    """
+    Get build information including channel from PaperMC API.
+
+    Args:
+        version: Folia version (e.g., "1.21.11")
+        build: Build number (e.g., "2")
+
+    Returns:
+        Dictionary containing build information, or empty dict on error
+    """
+    try:
+        url = f"https://api.papermc.io/v2/projects/folia/versions/{version}/builds/{build}"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching build info for {version}-{build}: {e}")
+        return {}
+
+
+def is_build_experimental(version: str, build: str) -> bool:
+    """
+    Check if a specific build is experimental.
+
+    Args:
+        version: Folia version
+        build: Build number
+
+    Returns:
+        True if build is experimental, False otherwise
+    """
+    build_info = get_build_info(version, build)
+    return build_info.get("channel") == "experimental"
+
+
+def get_latest_stable_or_experimental_build(version: str) -> Tuple[Optional[str], bool]:
+    """
+    Get the latest build number for a version, preferring stable over experimental.
+
+    Args:
+        version: Folia version
+
+    Returns:
+        Tuple of (build_number, is_experimental)
+        build_number: Latest build number (or None if no builds)
+        is_experimental: True if the build is experimental, False if stable
+    """
+    try:
+        url = f"https://api.papermc.io/v2/projects/folia/versions/{version}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        builds = data.get("builds", [])
+        if not builds:
+            return None, False
+
+        # Look for stable builds first (channel="default")
+        for build in reversed(builds):
+            if build.get("channel") == "default":
+                return str(build["build"]), False
+
+        # Fallback to experimental builds
+        for build in reversed(builds):
+            if build.get("channel") == "experimental":
+                return str(build["build"]), True
+
+        # If no channel information, assume it's experimental (backward compatibility)
+        return str(builds[-1]["build"]), True
+
+    except Exception as e:
+        print(f"Error getting build info for {version}: {e}")
+        return None, False
+
+
+def get_latest_build_for_channel(version: str, channel: str = "default") -> Optional[str]:
+    """
+    Get the latest build number for a specific channel.
+
+    Args:
+        version: Folia version
+        channel: Build channel ("default" for stable, "experimental" for experimental)
+
+    Returns:
+        Latest build number for the channel, or None if not found
+    """
+    try:
+        url = f"https://api.papermc.io/v2/projects/folia/versions/{version}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        builds = data.get("builds", [])
+        for build in reversed(builds):
+            if build.get("channel") == channel:
+                return str(build["build"])
+
+        return None
+
+    except Exception as e:
+        print(f"Error getting latest build for {version} channel {channel}: {e}")
+        return None
+
+
+def get_available_builds(version: str) -> dict:
+    """
+    Get all available builds for a version, categorized by channel.
+
+    Args:
+        version: Folia version
+
+    Returns:
+        Dictionary with 'stable' and 'experimental' build lists
+    """
+    try:
+        url = f"https://api.papermc.io/v2/projects/folia/versions/{version}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        builds = data.get("builds", [])
+        stable_builds = []
+        experimental_builds = []
+
+        for build in builds:
+            build_num = str(build["build"])
+            if build.get("channel") == "default":
+                stable_builds.append(build_num)
+            elif build.get("channel") == "experimental":
+                experimental_builds.append(build_num)
+            else:
+                # If no channel specified, treat as experimental for safety
+                experimental_builds.append(build_num)
+
+        return {
+            "stable": stable_builds,
+            "experimental": experimental_builds,
+            "latest_stable": stable_builds[-1] if stable_builds else None,
+            "latest_experimental": experimental_builds[-1] if experimental_builds else None
+        }
+
+    except Exception as e:
+        print(f"Error getting builds for {version}: {e}")
+        return {"stable": [], "experimental": []}
