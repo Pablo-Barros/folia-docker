@@ -73,6 +73,7 @@ jobs:
           python build.py
         env:
           DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || secrets.DOCKER_USERNAME || 'endkind' }}
+          ENABLE_EXPERIMENTAL: true
 
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -83,3 +84,4 @@ jobs:
           python push.py
         env:
           DOCKER_NAMESPACE: ${{ secrets.DOCKER_USERNAME }}
+          ENABLE_EXPERIMENTAL: true
