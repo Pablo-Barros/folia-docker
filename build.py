@@ -34,6 +34,8 @@ def build(tag: str) -> Result[str, str]:
         Result[str, str]: Ok with success message or Err with error message
     """
     try:
+        version_tag = None  # Initialize for all code paths
+
         # Handle experimental tagging with stable-first logic
         if tag == "experimental":
             # Experimental tag always points to 1.21.11 for now (can be made dynamic later)
