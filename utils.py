@@ -159,6 +159,26 @@ def get_experimental_tags(version: str) -> List[str]:
 # Build Detection Functions for Stable-First Tagging Strategy
 # =============================================================================
 
+# Simple cache to avoid repeated API calls during build process
+_build_info_cache = {}
+
+
+def get_build_info_cached(version: str, build: str) -> dict:
+    """
+    Cached version of get_build_info to avoid repeated API calls.
+
+    Args:
+        version: Folia version (e.g., "1.21.11")
+        build: Build number (e.g., "2")
+
+    Returns:
+        Dictionary containing build information, or empty dict on error
+    """
+    cache_key = f"{version}-{build}"
+    if cache_key not in _build_info_cache:
+        _build_info_cache[cache_key] = get_build_info(version, build)
+    return _build_info_cache[cache_key]
+
 def get_build_info(version: str, build: str) -> dict:
     """
     Get build information including channel from PaperMC API.
@@ -217,18 +237,36 @@ def get_latest_stable_or_experimental_build(version: str) -> Tuple[Optional[str]
         if not builds:
             return None, False
 
-        # Look for stable builds first (channel="default")
-        for build in reversed(builds):
-            if build.get("channel") == "default":
-                return str(build["build"]), False
+        # Single pass through builds (latest first), collecting stable and experimental
+        latest_stable = None
+        latest_experimental = None
 
-        # Fallback to experimental builds
-        for build in reversed(builds):
-            if build.get("channel") == "experimental":
-                return str(build["build"]), True
+        for build_num in reversed(builds):
+            build_info = get_build_info_cached(version, str(build_num))
 
-        # If no channel information, assume it's experimental (backward compatibility)
-        return str(builds[-1]["build"]), True
+            # Skip if build_info is empty or not a dict
+            if not build_info or not isinstance(build_info, dict):
+                continue
+
+            channel = build_info.get("channel")
+
+            if channel == "default" and latest_stable is None:
+                latest_stable = str(build_num)
+            elif channel == "experimental" and latest_experimental is None:
+                latest_experimental = str(build_num)
+
+            # Early exit if we have both
+            if latest_stable and latest_experimental:
+                break
+
+        # Return stable if available, otherwise experimental
+        if latest_stable:
+            return latest_stable, False
+        if latest_experimental:
+            return latest_experimental, True
+
+        # Fallback: use the latest build number if no channel info found
+        return str(builds[-1]), True
 
     except Exception as e:
         print(f"Error getting build info for {version}: {e}")
@@ -253,9 +291,10 @@ def get_latest_build_for_channel(version: str, channel: str = "default") -> Opti
         data = response.json()
 
         builds = data.get("builds", [])
-        for build in reversed(builds):
-            if build.get("channel") == channel:
-                return str(build["build"])
+        for build_num in reversed(builds):
+            build_info = get_build_info_cached(version, str(build_num))
+            if build_info.get("channel") == channel:
+                return str(build_num)
 
         return None
 
@@ -284,15 +323,14 @@ def get_available_builds(version: str) -> dict:
         stable_builds = []
         experimental_builds = []
 
-        for build in builds:
-            build_num = str(build["build"])
-            if build.get("channel") == "default":
-                stable_builds.append(build_num)
-            elif build.get("channel") == "experimental":
-                experimental_builds.append(build_num)
+        for build_num in builds:
+            build_info = get_build_info_cached(version, str(build_num))
+            channel = build_info.get("channel", "experimental")  # Default to experimental for safety
+
+            if channel == "default":
+                stable_builds.append(str(build_num))
             else:
-                # If no channel specified, treat as experimental for safety
-                experimental_builds.append(build_num)
+                experimental_builds.append(str(build_num))
 
         return {
             "stable": stable_builds,
@@ -303,4 +341,4 @@ def get_available_builds(version: str) -> dict:
 
     except Exception as e:
         print(f"Error getting builds for {version}: {e}")
-        return {"stable": [], "experimental": []}
+        return {"stable": [], "experimental": [], "latest_stable": None, "latest_experimental": None}

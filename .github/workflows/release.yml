@@ -24,17 +24,24 @@ jobs:
           RESPONSE=$(curl -s -w "%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/latest)
           HTTP_STATUS=$(echo "$RESPONSE" | tail -c 4)
           BODY=$(echo "$RESPONSE" | head -c -4)
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Error: Failed to fetch latest release (HTTP $HTTP_STATUS)"
-            exit 1
+
+          if [ "$HTTP_STATUS" -eq 404 ]; then
+            # No releases exist, use current HEAD
+            echo "tag=" >> $GITHUB_OUTPUT
+            echo "No releases found, using current HEAD"
+          elif [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Warning: Failed to fetch latest release (HTTP $HTTP_STATUS), using current HEAD"
+            echo "tag=" >> $GITHUB_OUTPUT
+          else
+            LATEST_TAG=$(echo "$BODY" | jq -r '.tag_name')
+            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+              echo "Warning: Could not extract tag_name from response, using current HEAD"
+              echo "tag=" >> $GITHUB_OUTPUT
+            else
+              echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+              echo "Latest release tag: $LATEST_TAG"
+            fi
           fi
-          LATEST_TAG=$(echo "$BODY" | jq -r '.tag_name')
-          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
-            echo "Error: Could not extract tag_name from response"
-            exit 1
-          fi
-          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest release tag: $LATEST_TAG"
 
       - name: Checkout Repository
         uses: actions/checkout@v4
