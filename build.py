@@ -50,11 +50,14 @@ def build(tag: str) -> Result[str, str]:
             is_experimental = build_result[1]
 
             if is_experimental:
-                # Use experimental-specific tag
+                # Use experimental-specific tag as primary
                 image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp{build_number}"
+                # Also create version tag as fallback (points to experimental when no stable exists)
+                version_tag = DockerConfig.get_image_name("1.21.11")
             else:
                 # Use standard version tag for stable builds
                 image_name = DockerConfig.get_image_name("1.21.11")
+                version_tag = None
 
             build_args = ["--build-arg", "VERSION=1.21.11", "--build-arg", f"BUILD={build_number}"]
             context_path = "./versions/1.21.11"
@@ -71,16 +74,26 @@ def build(tag: str) -> Result[str, str]:
         if not os.path.exists(context_path):
             return Err(f"Build context path '{context_path}' does not exist")
 
+        # Build command with primary tag
         cmd = ["docker", "build"] + build_args + ["-t", image_name, context_path]
 
+        # Add version tag if this is experimental (fallback behavior)
+        if version_tag:
+            cmd = ["docker", "build"] + build_args + ["-t", image_name, "-t", version_tag, context_path]
+
         print(f"Building Docker image: {image_name}")
+        if version_tag:
+            print(f"Also tagging as: {version_tag}")
         print(f"Build context: {context_path}")
         print(f"Build args: {build_args if build_args else 'None'}")
         print(f"Command: {' '.join(cmd)}")
 
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-        return Ok(f"Docker image '{image_name}' built successfully")
+        tags_created = image_name
+        if version_tag:
+            tags_created = f"{image_name} and {version_tag}"
+        return Ok(f"Docker image '{tags_created}' built successfully")
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Docker build failed: {e.stderr if e.stderr else e.stdout}"

@@ -37,6 +37,7 @@ def push(tag: str) -> Result[str, str]:
         if tag == "experimental":
             # Experimental tag always points to 1.21.11 for now (can be made dynamic later)
             image_name = DockerConfig.get_image_name("experimental")
+            version_tag = None
         elif tag == "1.21.11":
             # Use stable-first logic for version tags (mirror build.py logic)
             build_result = get_latest_stable_or_experimental_build("1.21.11")
@@ -47,22 +48,36 @@ def push(tag: str) -> Result[str, str]:
             is_experimental = build_result[1]
 
             if is_experimental:
-                # Use experimental-specific tag
+                # Use experimental-specific tag as primary
                 image_name = f"{DockerConfig.get_namespace()}/folia:1.21.11-exp{build_number}"
+                # Also push version tag as fallback (points to experimental when no stable exists)
+                version_tag = DockerConfig.get_image_name("1.21.11")
             else:
                 # Use standard version tag for stable builds
                 image_name = DockerConfig.get_image_name("1.21.11")
+                version_tag = None
         elif tag == "latest":
             image_name = DockerConfig.get_image_name("latest")
+            version_tag = None
         else:
             image_name = DockerConfig.get_image_name(tag)
+            version_tag = None
 
+        # Push primary tag
         cmd = ["docker", "push", image_name]
 
         print(f"Pushing Docker image: {image_name}")
         print(f"Command: {' '.join(cmd)}")
 
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        # Push version tag if this is experimental (fallback behavior)
+        if version_tag:
+            cmd = ["docker", "push", version_tag]
+            print(f"Also pushing: {version_tag}")
+            print(f"Command: {' '.join(cmd)}")
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return Ok(f"Docker images '{image_name}' and '{version_tag}' pushed successfully")
 
         return Ok(f"Docker image '{image_name}' pushed successfully")
 
