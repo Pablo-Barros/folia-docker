@@ -165,12 +165,13 @@ jobs:
           docker images | grep folia
 
           echo "=== Verifying Experimental Image ==="
-          EXPERIMENTAL_IMAGE="${{ vars.DOCKER_USERNAME || 'blackao' }}/folia:1.21.11-exp2"
-          if docker images | grep -q "1.21.11-exp2"; then
+          # Find the actual experimental image built (dynamically detect build number)
+          EXPERIMENTAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "folia:1.21.11-exp")
+          if [ -n "$EXPERIMENTAL_IMAGE" ]; then
             echo "✅ Experimental image found: $EXPERIMENTAL_IMAGE"
             docker inspect "$EXPERIMENTAL_IMAGE" > /dev/null && echo "✅ Image is valid" || echo "❌ Image is corrupted"
           else
-            echo "❌ Experimental image NOT found: $EXPERIMENTAL_IMAGE"
+            echo "❌ Experimental image NOT found for 1.21.11"
             echo "All available images:"
             docker images
             exit 1
@@ -187,14 +188,14 @@ jobs:
 
           echo "=== Environment Variables ==="
           echo "DOCKER_NAMESPACE: $DOCKER_NAMESPACE"
-          echo "Expected image: ${{ vars.DOCKER_USERNAME }}/folia:1.21.11-exp2"
 
           echo "=== Verifying image exists before push ==="
-          EXPECTED_IMAGE="${{ vars.DOCKER_USERNAME }}/folia:1.21.11-exp2"
-          if docker images | grep -q "$EXPECTED_IMAGE"; then
-            echo "✅ Image found: $EXPECTED_IMAGE"
+          # Find the actual experimental image built (dynamically detect build number)
+          EXPERIMENTAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "folia:1.21.11-exp" | head -1)
+          if [ -n "$EXPERIMENTAL_IMAGE" ]; then
+            echo "✅ Image found: $EXPERIMENTAL_IMAGE"
           else
-            echo "❌ Image NOT found: $EXPECTED_IMAGE"
+            echo "❌ No experimental image found for 1.21.11"
             echo "Available images:"
             docker images | grep folia || echo "No folia images"
             echo "All Docker images:"
@@ -204,6 +205,7 @@ jobs:
             python build.py "1.21.11"
             if [ $? -eq 0 ]; then
               echo "✅ Manual build successful"
+              EXPERIMENTAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "folia:1.21.11-exp" | head -1)
             else
               echo "❌ Manual build failed"
               exit 1
